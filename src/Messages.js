@@ -14,7 +14,7 @@ function Messages() {
     if (!message || !phone) return alert("Message and phone are required");
 
     try {
-      const res = await fetch('https://yepcars-crm-backend.railway.internal/ai-auto-reply', {
+      const res = await fetch('https://yepcars-crm-backend-production.up.railway.app/ai-auto-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message })

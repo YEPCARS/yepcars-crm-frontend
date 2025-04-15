@@ -26,7 +26,6 @@ function Messages() {
       const data = await res.json();
       setAiReply(data.reply);
 
-      // Simple scoring logic
       let leadScore = 5;
       let category = "General";
 
@@ -42,7 +41,6 @@ function Messages() {
         category = "Low Intent";
       }
 
-      // Save to Firebase Firestore
       await addDoc(collection(db, "leads"), {
         message: userMessage,
         aiReply: data.reply,

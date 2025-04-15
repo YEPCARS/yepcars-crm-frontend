@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
+import { db } from './firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const BACKEND_URL = "https://yepcars-crm-backend-production.up.railway.app";
 
 function Messages() {
   const [userMessage, setUserMessage] = useState('');
   const [aiReply, setAiReply] = useState('');
+  const [status, setStatus] = useState('');
 
   const handleSubmit = async () => {
+    if (!userMessage.trim()) {
+      setStatus("Please enter a message.");
+      return;
+    }
+
+    setStatus("Sending...");
     try {
       const res = await fetch(`${BACKEND_URL}/ai-auto-reply`, {
         method: 'POST',
@@ -16,9 +25,37 @@ function Messages() {
 
       const data = await res.json();
       setAiReply(data.reply);
+
+      // Simple scoring logic
+      let leadScore = 5;
+      let category = "General";
+
+      const lowerMsg = userMessage.toLowerCase();
+      if (lowerMsg.includes("buy") || lowerMsg.includes("finance") || lowerMsg.includes("truck") || lowerMsg.includes("car")) {
+        leadScore = 9;
+        category = "Buying Interest";
+      } else if (lowerMsg.includes("how much") || lowerMsg.includes("price")) {
+        leadScore = 7;
+        category = "Price Inquiry";
+      } else if (lowerMsg.includes("thanks") || lowerMsg.includes("ok")) {
+        leadScore = 3;
+        category = "Low Intent";
+      }
+
+      // Save to Firebase Firestore
+      await addDoc(collection(db, "leads"), {
+        message: userMessage,
+        aiReply: data.reply,
+        createdAt: serverTimestamp(),
+        leadScore,
+        category
+      });
+
+      setStatus("✅ Message saved to CRM.");
     } catch (error) {
-      console.error("Error connecting to the backend:", error);
-      setAiReply("Error connecting to the backend.");
+      console.error("Error:", error);
+      setAiReply("⚠️ Error connecting to the backend.");
+      setStatus("❌ Failed to save lead.");
     }
   };
 
@@ -35,6 +72,7 @@ function Messages() {
       />
       <button onClick={handleSubmit}>Send Message</button>
       <p><strong>AI Reply:</strong> {aiReply}</p>
+      <p><em>{status}</em></p>
     </div>
   );
 }
